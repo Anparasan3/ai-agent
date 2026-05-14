@@ -39,14 +39,23 @@ document.addEventListener('click', (e) => {
   const copyBtn = e.target.closest('.copy-btn');
   if (copyBtn) {
     copyCode(copyBtn.dataset.target, copyBtn);
+    return;
+  }
+
+  const permBtn = e.target.closest('[data-perm-id]');
+  if (permBtn) {
+    const id       = permBtn.dataset.permId;
+    const approved = permBtn.dataset.approved === 'true';
+    resolvePermission(id, approved);
   }
 });
 
 // Extension messages
 window.addEventListener('message', ({ data }) => {
-  if      (data.command === 'chunk') appendChunk(data.text);
-  else if (data.command === 'done')  finalizeMessage();
-  else if (data.command === 'error') appendError(data.text);
+  if      (data.command === 'chunk')      appendChunk(data.text);
+  else if (data.command === 'done')       finalizeMessage();
+  else if (data.command === 'error')      appendError(data.text);
+  else if (data.command === 'permission') showPermission(data.id, data.action, data.detail);
 });
 
 // ── Core actions ─────────────────────────────────────────────────
@@ -270,4 +279,38 @@ function buildWelcomeHtml() {
       '<div class="suggestions">' + chipHtml + '</div>' +
     '</div>'
   );
+}
+
+// ── Permission prompt ─────────────────────────────────────────────
+
+function showPermission(id, action, detail) {
+  const actionLabel = {
+    read_file:  '📂 Read file',
+    write_file: '✏️  Write file',
+  }[action] || action;
+
+  const card = document.createElement('div');
+  card.className = 'perm-card';
+  card.id = 'perm-' + id;
+  card.innerHTML =
+    '<div class="perm-info">' +
+      '<div class="perm-label">' + actionLabel + '</div>' +
+      '<div class="perm-detail">' + escHtml(detail) + '</div>' +
+    '</div>' +
+    '<div class="perm-btns">' +
+      '<button class="perm-allow" data-perm-id="' + id + '" data-approved="true">Allow</button>' +
+      '<button class="perm-deny"  data-perm-id="' + id + '" data-approved="false">Deny</button>' +
+    '</div>';
+  chat.appendChild(card);
+  scrollBottom();
+}
+
+function resolvePermission(id, approved) {
+  const card = document.getElementById('perm-' + id);
+  if (card) {
+    const label = approved ? '✓ Allowed' : '✗ Denied';
+    const cls   = approved ? 'perm-status allowed' : 'perm-status denied';
+    card.querySelector('.perm-btns').innerHTML = '<span class="' + cls + '">' + label + '</span>';
+  }
+  vscode.postMessage({ command: 'permission_response', id, approved });
 }

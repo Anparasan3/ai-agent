@@ -22,15 +22,35 @@ export function activate(context: vscode.ExtensionContext) {
 
     panel.webview.html = getHtml(panel.webview.cspSource, cssUri, jsUri);
 
+    // Pending permission requests keyed by id
+    const pendingPermissions = new Map<string, (approved: boolean) => void>();
+
     panel.webview.onDidReceiveMessage(async (msg) => {
+      // User responded to a permission prompt
+      if (msg.command === "permission_response") {
+        pendingPermissions.get(msg.id)?.(msg.approved);
+        pendingPermissions.delete(msg.id);
+        return;
+      }
+
       if (msg.command !== "ask") return;
 
       panel.webview.postMessage({ command: "thinking" });
 
-      try {
-        await runAgentStreaming(msg.text, (chunk) => {
-          panel.webview.postMessage({ command: "chunk", text: chunk });
+      const requestPermission = (action: string, detail: string): Promise<boolean> => {
+        const id = Math.random().toString(36).slice(2, 10);
+        return new Promise((resolve) => {
+          pendingPermissions.set(id, resolve);
+          panel.webview.postMessage({ command: "permission", id, action, detail });
         });
+      };
+
+      try {
+        await runAgentStreaming(
+          msg.text,
+          (chunk) => panel.webview.postMessage({ command: "chunk", text: chunk }),
+          requestPermission
+        );
         panel.webview.postMessage({ command: "done" });
       } catch (err) {
         panel.webview.postMessage({

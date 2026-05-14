@@ -13,14 +13,27 @@ function activate(context) {
         const cssUri = panel.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, "media", "webview.css"));
         const jsUri = panel.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, "media", "webview.js"));
         panel.webview.html = getHtml(panel.webview.cspSource, cssUri, jsUri);
+        // Pending permission requests keyed by id
+        const pendingPermissions = new Map();
         panel.webview.onDidReceiveMessage(async (msg) => {
+            // User responded to a permission prompt
+            if (msg.command === "permission_response") {
+                pendingPermissions.get(msg.id)?.(msg.approved);
+                pendingPermissions.delete(msg.id);
+                return;
+            }
             if (msg.command !== "ask")
                 return;
             panel.webview.postMessage({ command: "thinking" });
-            try {
-                await (0, agent_1.runAgentStreaming)(msg.text, (chunk) => {
-                    panel.webview.postMessage({ command: "chunk", text: chunk });
+            const requestPermission = (action, detail) => {
+                const id = Math.random().toString(36).slice(2, 10);
+                return new Promise((resolve) => {
+                    pendingPermissions.set(id, resolve);
+                    panel.webview.postMessage({ command: "permission", id, action, detail });
                 });
+            };
+            try {
+                await (0, agent_1.runAgentStreaming)(msg.text, (chunk) => panel.webview.postMessage({ command: "chunk", text: chunk }), requestPermission);
                 panel.webview.postMessage({ command: "done" });
             }
             catch (err) {

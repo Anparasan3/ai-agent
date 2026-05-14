@@ -394,3 +394,52 @@ body {
   opacity: 0.35;
   text-align: center;
 }
+
+/* ── Permission card ── */
+.perm-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--vscode-sideBar-background, #12121e);
+  border: 1px solid #7c6af555;
+  border-radius: 12px;
+  animation: fadeSlideIn 0.2s ease-out;
+}
+
+.perm-info { flex: 1; }
+
+.perm-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #c0b8ff;
+}
+
+.perm-detail {
+  font-size: 11px;
+  opacity: 0.55;
+  margin-top: 2px;
+  word-break: break-all;
+}
+
+.perm-btns { display: flex; gap: 6px; flex-shrink: 0; }
+
+.perm-allow, .perm-deny {
+  padding: 4px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  border: 1px solid;
+  transition: background 0.15s;
+}
+
+.perm-allow { background: #4ade8018; border-color: #4ade8055; color: #4ade80; }
+.perm-allow:hover { background: #4ade8030; }
+
+.perm-deny  { background: #f8717118; border-color: #f8717155; color: #f87171; }
+.perm-deny:hover  { background: #f8717130; }
+
+.perm-status { font-size: 12px; }
+.perm-status.allowed { color: #4ade80; }
+.perm-status.denied  { color: #f87171; }
