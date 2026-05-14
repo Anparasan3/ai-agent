@@ -6,36 +6,46 @@ const client = new OpenAI({
   apiKey: "lm-studio"
 });
 
-const MODEL ='qwen/qwen3-4b-2507' // "qwen2.5-1.5b-instruct";
+const MODEL = "qwen/qwen3-4b-2507";
 
-export async function runAgent(userInput: string) {
-  const code = getSelectedCode();
-
-  const systemPrompt = `
-You are a coding AI agent.
+const SYSTEM_PROMPT = `You are a coding AI agent embedded in VS Code.
 
 Rules:
-- If user asks to fix/refactor → return only code
-- If general question → explain clearly
-`;
+- If the user asks to fix, refactor, or improve code → return only the corrected code block
+- If the user asks a general question → explain clearly with examples
+- Format code in fenced code blocks with the language specified`;
 
-  const response = await client.chat.completions.create({
+export async function runAgentStreaming(
+  userInput: string,
+  onChunk: (chunk: string) => void
+): Promise<void> {
+  const code = getSelectedCode();
+
+  const userContent = code
+    ? `${userInput}\n\n\`\`\`\n${code}\n\`\`\``
+    : userInput;
+
+  const stream = await client.chat.completions.create({
     model: MODEL,
     messages: [
-      { role: "system", content: systemPrompt },
-      {
-        role: "user",
-        content: `${userInput}\n\nCode:\n${code}`
-      }
-    ]
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: userContent }
+    ],
+    stream: true
   });
 
-  const reply = response.choices[0].message.content || "";
+  let fullReply = "";
 
-  // Auto apply if looks like code
-  if (reply.includes("function") || reply.includes("const")) {
-    await replaceSelectedCode(reply);
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta?.content ?? "";
+    if (delta) {
+      fullReply += delta;
+      onChunk(delta);
+    }
   }
 
-  return reply;
+  if (code && (fullReply.includes("function") || fullReply.includes("const") || fullReply.includes("class"))) {
+    const codeMatch = fullReply.match(/```(?:\w+)?\n([\s\S]*?)```/);
+    await replaceSelectedCode(codeMatch ? codeMatch[1].trim() : fullReply);
+  }
 }
