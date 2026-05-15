@@ -1,10 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.runAgentStreaming = runAgentStreaming;
-const openai_1 = require("openai");
+const config_1 = require("./config");
 const tools_1 = require("./tools");
-const client = new openai_1.default({ baseURL: "http://localhost:1234/v1", apiKey: "lm-studio" });
-const MODEL = "qwen/qwen3-4b-2507";
 const SYSTEM_PROMPT = `You are a coding AI agent embedded in VS Code.
 
 Every message includes a <context> block with live workspace data.
@@ -82,6 +80,7 @@ async function runAgentStreaming(userInput, onChunk, onPermission) {
     const filePath = (0, tools_1.getCurrentFilePath)();
     const workspacePath = (0, tools_1.getWorkspaceRootPath)();
     const workspaceFiles = await (0, tools_1.listWorkspaceFiles)();
+    const { client, model } = (0, config_1.getProviderConfig)();
     const contextLines = [];
     if (workspacePath)
         contextLines.push(`current_working_directory: ${workspacePath}`);
@@ -101,7 +100,7 @@ async function runAgentStreaming(userInput, onChunk, onPermission) {
     // Agentic loop — keep calling until no more tool calls
     while (true) {
         const response = await client.chat.completions.create({
-            model: MODEL,
+            model,
             messages,
             tools: TOOLS,
             tool_choice: "auto"

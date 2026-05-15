@@ -1,9 +1,13 @@
 const vscode = acquireVsCodeApi();
 
-const textarea = document.getElementById('input');
-const sendBtn  = document.getElementById('sendBtn');
-const clearBtn = document.getElementById('clearBtn');
-const chat     = document.getElementById('chat');
+const textarea          = document.getElementById('input');
+const sendBtn           = document.getElementById('sendBtn');
+const clearBtn          = document.getElementById('clearBtn');
+const settingsBtn       = document.getElementById('settingsBtn');
+const providerBtn       = document.getElementById('providerBtn');
+const providerDropdown  = document.getElementById('providerDropdown');
+const providerLabel     = document.getElementById('providerLabel');
+const chat              = document.getElementById('chat');
 
 let isThinking    = false;
 let currentBubble = null;
@@ -14,15 +18,30 @@ let loadingTimer  = null;
 
 // ── Event listeners ──────────────────────────────────────────────
 
-sendBtn.addEventListener('click', send);
-clearBtn.addEventListener('click', clearChat);
+sendBtn?.addEventListener('click', send);
+clearBtn?.addEventListener('click', clearChat);
+settingsBtn?.addEventListener('click', () => vscode.postMessage({ command: 'openSettings' }));
 
-textarea.addEventListener('input', () => {
+// Provider dropdown toggle
+providerBtn?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (providerDropdown) providerDropdown.hidden = !providerDropdown.hidden;
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', () => {
+  if (providerDropdown) providerDropdown.hidden = true;
+});
+
+// Notify extension that webview is ready
+vscode.postMessage({ command: 'ready' });
+
+textarea?.addEventListener('input', () => {
   textarea.style.height = 'auto';
   textarea.style.height = Math.min(textarea.scrollHeight, 130) + 'px';
 });
 
-textarea.addEventListener('keydown', (e) => {
+textarea?.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
     send();
@@ -32,21 +51,21 @@ textarea.addEventListener('keydown', (e) => {
 // Suggestion chips and copy buttons via event delegation
 document.addEventListener('click', (e) => {
   const chip = e.target.closest('.suggestion-chip');
-  if (chip) {
-    fillInput(chip.dataset.text);
-    return;
-  }
+  if (chip) { fillInput(chip.dataset.text); return; }
+
   const copyBtn = e.target.closest('.copy-btn');
-  if (copyBtn) {
-    copyCode(copyBtn.dataset.target, copyBtn);
-    return;
-  }
+  if (copyBtn) { copyCode(copyBtn.dataset.target, copyBtn); return; }
 
   const permBtn = e.target.closest('[data-perm-id]');
   if (permBtn) {
-    const id       = permBtn.dataset.permId;
-    const approved = permBtn.dataset.approved === 'true';
-    resolvePermission(id, approved);
+    resolvePermission(permBtn.dataset.permId, permBtn.dataset.approved === 'true');
+    return;
+  }
+
+  const providerOpt = e.target.closest('.provider-option');
+  if (providerOpt) {
+    providerDropdown.hidden = true;
+    vscode.postMessage({ command: 'setProvider', provider: providerOpt.dataset.provider });
   }
 });
 
@@ -56,7 +75,18 @@ window.addEventListener('message', ({ data }) => {
   else if (data.command === 'done')       finalizeMessage();
   else if (data.command === 'error')      appendError(data.text);
   else if (data.command === 'permission') showPermission(data.id, data.action, data.detail);
+  else if (data.command === 'provider')   updateProviderLabel(data.label, data.provider);
 });
+
+function updateProviderLabel(label, provider) {
+  if (providerLabel) {
+    const icon = provider === 'groq' ? '⚡' : '🏠';
+    providerLabel.textContent = icon + ' ' + label;
+  }
+  document.querySelectorAll('.provider-option').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.provider === provider);
+  });
+}
 
 // ── Core actions ─────────────────────────────────────────────────
 

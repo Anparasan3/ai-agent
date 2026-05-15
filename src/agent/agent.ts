@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { getProviderConfig } from "./config";
 import {
   getSelectedCode,
   getCurrentFilePath,
@@ -8,10 +9,6 @@ import {
   writeWorkspaceFile,
   listWorkspaceFiles,
 } from "./tools";
-
-const client = new OpenAI({ baseURL: "http://localhost:1234/v1", apiKey: "lm-studio" });
-
-const MODEL = "qwen/qwen3-4b-2507";
 
 const SYSTEM_PROMPT = `You are a coding AI agent embedded in VS Code.
 
@@ -96,6 +93,8 @@ export async function runAgentStreaming(
   const workspacePath  = getWorkspaceRootPath();
   const workspaceFiles = await listWorkspaceFiles();
 
+  const { client, model } = getProviderConfig();
+
   const contextLines: string[] = [];
   if (workspacePath)         contextLines.push(`current_working_directory: ${workspacePath}`);
   if (filePath)              contextLines.push(`active_file: ${filePath}`);
@@ -114,7 +113,7 @@ export async function runAgentStreaming(
   // Agentic loop — keep calling until no more tool calls
   while (true) {
     const response = await client.chat.completions.create({
-      model: MODEL,
+      model,
       messages,
       tools: TOOLS,
       tool_choice: "auto"

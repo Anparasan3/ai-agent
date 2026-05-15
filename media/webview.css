@@ -16,50 +16,41 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--vscode-panel-border, #2a2a3e);
   background: var(--vscode-sideBar-background, #12121e);
   flex-shrink: 0;
+  gap: 8px;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .header-logo {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
   background: linear-gradient(135deg, #7c6af5, #b06af5);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 14px;
   flex-shrink: 0;
 }
 
-.header-info h1 {
-  font-size: 14px;
+.header-title {
+  font-size: 13px;
   font-weight: 600;
-  line-height: 1.2;
 }
 
-.header-info p {
-  font-size: 10px;
-  opacity: 0.5;
-  margin-top: 1px;
-}
-
-.status-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #4ade80;
-  margin-right: 4px;
-  vertical-align: middle;
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .icon-btn {
@@ -78,6 +69,62 @@ body {
   border-color: #7c6af5;
   color: #c0b8ff;
 }
+
+/* ── Provider picker ── */
+.provider-picker {
+  position: relative;
+}
+
+.provider-current {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--vscode-input-background, #1a1a2a);
+  border: 1px solid var(--vscode-panel-border, #2a2a3e);
+  color: var(--vscode-foreground, #e0e0ef);
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: border-color 0.15s;
+  white-space: nowrap;
+}
+
+.provider-current:hover { border-color: #7c6af5; }
+
+.chevron { opacity: 0.45; font-size: 9px; }
+
+.provider-dropdown {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  background: #1a1a2e;
+  border: 1px solid var(--vscode-panel-border, #2a2a3e);
+  border-radius: 8px;
+  overflow: hidden;
+  min-width: 170px;
+  z-index: 200;
+  box-shadow: 0 6px 20px #00000070;
+}
+
+.provider-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 14px;
+  background: none;
+  border: none;
+  color: var(--vscode-foreground, #e0e0ef);
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+  transition: background 0.12s;
+}
+
+.provider-option:hover  { background: #252540; }
+.provider-option.active { color: #c0b8ff; font-weight: 600; }
+.provider-option.active::after { content: ' ✓'; margin-left: auto; opacity: 0.7; }
 
 /* ── Messages ── */
 #chat {

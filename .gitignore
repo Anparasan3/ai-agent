@@ -1,2 +1,9 @@
 
 node_modules
+dist
+build
+/out
+
+bun.lock
+package-lock.json
+.env

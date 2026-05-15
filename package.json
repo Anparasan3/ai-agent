@@ -1,7 +1,7 @@
 {
   "name": "ai-agent",
   "displayName": "AI Agent",
-  "description": "Local AI coding assistant using LM Studio",
+  "description": "AI coding assistant supporting LM Studio and Groq",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.85.0"
@@ -16,16 +16,54 @@
         "command": "ai-agent.openChat",
         "title": "Open AI Chat"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "AI Agent",
+      "properties": {
+        "aiAgent.provider": {
+          "type": "string",
+          "enum": ["lmstudio", "groq"],
+          "enumDescriptions": [
+            "Local LM Studio server (default)",
+            "Groq cloud API"
+          ],
+          "default": "lmstudio",
+          "description": "AI provider to use"
+        },
+        "aiAgent.lmStudioUrl": {
+          "type": "string",
+          "default": "http://localhost:1234/v1",
+          "description": "LM Studio server base URL"
+        },
+        "aiAgent.lmStudioModel": {
+          "type": "string",
+          "default": "qwen/qwen3-4b-2507",
+          "description": "Model ID loaded in LM Studio"
+        },
+        "aiAgent.groqApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Groq API key (get one at https://console.groq.com/keys)"
+        },
+        "aiAgent.groqModel": {
+          "type": "string",
+          "default": "llama-3.3-70b-versatile",
+          "description": "Groq model to use"
+        }
+      }
+    }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "bun run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "extension:dev": "vsce package && code --install-extension ai-agent-0.0.1.vsix"
+    "extension:dev": "vsce package && code --install-extension ai-agent-0.0.1.vsix",
+    "fmt": "oxfmt",
+        "fmt:check": "oxfmt --check"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",
+    "oxfmt": "^0.50.0",
     "typescript": "^5.0.0"
   },
   "dependencies": {

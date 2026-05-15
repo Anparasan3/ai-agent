@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { runAgentStreaming } from "./agent/agent";
+import { getProviderConfig } from "./agent/config";
 
 export function activate(context: vscode.ExtensionContext) {
   const command = vscode.commands.registerCommand("ai-agent.openChat", () => {
@@ -30,6 +31,36 @@ export function activate(context: vscode.ExtensionContext) {
       if (msg.command === "permission_response") {
         pendingPermissions.get(msg.id)?.(msg.approved);
         pendingPermissions.delete(msg.id);
+        return;
+      }
+
+      if (msg.command === "ready") {
+        try {
+          const { label, provider } = getProviderConfig();
+          panel.webview.postMessage({ command: "provider", label, provider });
+        } catch {
+          panel.webview.postMessage({ command: "provider", label: "Not configured", provider: "lmstudio" });
+        }
+        return;
+      }
+
+      if (msg.command === "openSettings") {
+        vscode.commands.executeCommand("workbench.action.openSettings", "aiAgent");
+        return;
+      }
+
+      if (msg.command === "setProvider") {
+        const cfg = vscode.workspace.getConfiguration("aiAgent");
+        await cfg.update("provider", msg.provider, vscode.ConfigurationTarget.Global);
+        try {
+          const { label, provider } = getProviderConfig();
+          panel.webview.postMessage({ command: "provider", label, provider });
+        } catch (err) {
+          panel.webview.postMessage({
+            command: "error",
+            text: err instanceof Error ? err.message : "Provider configuration error."
+          });
+        }
         return;
       }
 
@@ -80,12 +111,22 @@ function getHtml(cspSource: string, cssUri: vscode.Uri, jsUri: vscode.Uri): stri
   <div class="header">
     <div class="header-left">
       <div class="header-logo">🤖</div>
-      <div class="header-info">
-        <h1>AI Agent</h1>
-        <p><span class="status-dot"></span>LM Studio · Local</p>
-      </div>
+      <h1 class="header-title">AI Agent</h1>
     </div>
-    <button id="clearBtn" class="icon-btn">Clear</button>
+    <div class="header-actions">
+      <div class="provider-picker" id="providerPicker">
+        <button class="provider-current" id="providerBtn">
+          <span id="providerLabel">Loading…</span>
+          <span class="chevron">▾</span>
+        </button>
+        <div class="provider-dropdown" id="providerDropdown" hidden>
+          <button class="provider-option" data-provider="lmstudio">🏠 LM Studio · Local</button>
+          <button class="provider-option" data-provider="groq">⚡ Groq · Cloud</button>
+        </div>
+      </div>
+      <button id="settingsBtn" class="icon-btn" title="Open settings">⚙</button>
+      <button id="clearBtn" class="icon-btn">Clear</button>
+    </div>
   </div>
 
   <div id="chat">
