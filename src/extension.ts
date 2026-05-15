@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { runAgentStreaming } from "./agent/agent";
-import { getProviderConfig } from "./agent/config";
+import { Provider } from "./agent/config";
 
 export function activate(context: vscode.ExtensionContext) {
   const command = vscode.commands.registerCommand("ai-agent.openChat", () => {
@@ -23,6 +23,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     panel.webview.html = getHtml(panel.webview.cspSource, cssUri, jsUri);
 
+    // In-memory provider state — avoids VS Code config scoping/caching issues
+    let activeProvider: Provider = vscode.workspace.getConfiguration("aiAgent").get<Provider>("provider", "lmstudio");
+
     // Pending permission requests keyed by id
     const pendingPermissions = new Map<string, (approved: boolean) => void>();
 
@@ -35,12 +38,13 @@ export function activate(context: vscode.ExtensionContext) {
       }
 
       if (msg.command === "ready") {
-        try {
-          const { label, provider } = getProviderConfig();
-          panel.webview.postMessage({ command: "provider", label, provider });
-        } catch {
-          panel.webview.postMessage({ command: "provider", label: "Not configured", provider: "lmstudio" });
-        }
+        const cfg = vscode.workspace.getConfiguration("aiAgent");
+        activeProvider = cfg.get<Provider>("provider", "lmstudio");
+        const labelMap: Record<Provider, string> = {
+          lmstudio: "LM Studio · Local",
+          groq:     "Groq · Cloud"
+        };
+        panel.webview.postMessage({ command: "provider", label: labelMap[activeProvider], provider: activeProvider });
         return;
       }
 
@@ -50,17 +54,14 @@ export function activate(context: vscode.ExtensionContext) {
       }
 
       if (msg.command === "setProvider") {
+        activeProvider = msg.provider as Provider;
         const cfg = vscode.workspace.getConfiguration("aiAgent");
-        await cfg.update("provider", msg.provider, vscode.ConfigurationTarget.Global);
-        try {
-          const { label, provider } = getProviderConfig();
-          panel.webview.postMessage({ command: "provider", label, provider });
-        } catch (err) {
-          panel.webview.postMessage({
-            command: "error",
-            text: err instanceof Error ? err.message : "Provider configuration error."
-          });
-        }
+        await cfg.update("provider", activeProvider, vscode.ConfigurationTarget.Global);
+        const labelMap: Record<Provider, string> = {
+          lmstudio: "LM Studio · Local",
+          groq:     "Groq · Cloud"
+        };
+        panel.webview.postMessage({ command: "provider", label: labelMap[activeProvider], provider: activeProvider });
         return;
       }
 
@@ -80,7 +81,8 @@ export function activate(context: vscode.ExtensionContext) {
         await runAgentStreaming(
           msg.text,
           (chunk) => panel.webview.postMessage({ command: "chunk", text: chunk }),
-          requestPermission
+          requestPermission,
+          activeProvider
         );
         panel.webview.postMessage({ command: "done" });
       } catch (err) {

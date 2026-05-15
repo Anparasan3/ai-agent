@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { getProviderConfig } from "./config";
+import { getProviderConfigFor, Provider } from "./config";
 import {
   getSelectedCode,
   getCurrentFilePath,
@@ -86,14 +86,16 @@ async function executeTool(name: string, args: Record<string, string>): Promise<
 export async function runAgentStreaming(
   userInput: string,
   onChunk: (chunk: string) => void,
-  onPermission: (action: string, detail: string) => Promise<boolean>
+  onPermission: (action: string, detail: string) => Promise<boolean>,
+  provider: Provider = "lmstudio"
 ): Promise<void> {
   const selectedCode   = getSelectedCode();
   const filePath       = getCurrentFilePath();
   const workspacePath  = getWorkspaceRootPath();
   const workspaceFiles = await listWorkspaceFiles();
 
-  const { client, model } = getProviderConfig();
+  const { client, model, label } = getProviderConfigFor(provider);
+  onChunk(`_via ${label}_\n\n`);
 
   const contextLines: string[] = [];
   if (workspacePath)         contextLines.push(`current_working_directory: ${workspacePath}`);

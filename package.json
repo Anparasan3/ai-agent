@@ -3,9 +3,12 @@
   "displayName": "AI Agent",
   "description": "AI coding assistant supporting LM Studio and Groq",
   "version": "0.0.1",
+  "publisher": "anparasan",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.85.0"
   },
+
   "activationEvents": [
     "onCommand:ai-agent.openChat"
   ],
@@ -27,7 +30,7 @@
             "Local LM Studio server (default)",
             "Groq cloud API"
           ],
-          "default": "lmstudio",
+          "default": "groq",
           "description": "AI provider to use"
         },
         "aiAgent.lmStudioUrl": {
@@ -43,7 +46,7 @@
         "aiAgent.groqApiKey": {
           "type": "string",
           "default": "",
-          "description": "Groq API key (get one at https://console.groq.com/keys)"
+          "description": "Groq API key — get one at https://console.groq.com/keys"
         },
         "aiAgent.groqModel": {
           "type": "string",
@@ -57,14 +60,28 @@
     "vscode:prepublish": "bun run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "extension:dev": "vsce package && code --install-extension ai-agent-0.0.1.vsix",
+    "extension:package": "vsce package",
+    "extension:install": "code --install-extension ai-agent-0.0.1.vsix",
+    "extension:uninstall": "code --uninstall-extension anparasan.ai-agent || true",
+    "extension:reinstall": "bun run extension:package && bun run extension:install",
+    "extension:clean": "rm -f ai-agent-*.vsix && bun run extension:uninstall",
+    "extension:dev": "bun run extension:clean && bun run extension:reinstall",
     "fmt": "oxfmt",
-        "fmt:check": "oxfmt --check"
+    "fmt:check": "oxfmt --check",
+    "extension:publish": "vsce publish",
+    "extension:publish:prerelease": "vsce publish --pre-release",
+    "extension:publish:patch": "vsce publish --patch",
+    "extension:publish:minor": "vsce publish --minor",
+    "extension:publish:major": "vsce publish --major"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",
     "oxfmt": "^0.50.0",
     "typescript": "^5.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Anparasan3/ai-agent"
   },
   "dependencies": {
     "openai": "^4.0.0"

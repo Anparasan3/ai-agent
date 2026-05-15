@@ -13,14 +13,20 @@ export interface ProviderConfig {
 export function getProviderConfig(): ProviderConfig {
   const cfg      = vscode.workspace.getConfiguration("aiAgent");
   const provider = cfg.get<Provider>("provider", "lmstudio");
+  return getProviderConfigFor(provider);
+}
+
+export function getProviderConfigFor(provider: Provider): ProviderConfig {
+  const cfg = vscode.workspace.getConfiguration("aiAgent");
 
   if (provider === "groq") {
     const apiKey = cfg.get<string>("groqApiKey", "");
     const model  = cfg.get<string>("groqModel",  "llama-3.3-70b-versatile");
 
-    if (!apiKey) {
+    const keyIsValid = apiKey && !apiKey.startsWith("${");
+    if (!keyIsValid) {
       throw new Error(
-        "Groq API key is not set. Add it in Settings → AI Agent → Groq Api Key."
+        "Groq API key is missing. Open Settings (⚙ button) → search 'aiAgent.groqApiKey' → paste your key from console.groq.com/keys"
       );
     }
 
