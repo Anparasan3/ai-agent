@@ -7,3 +7,4 @@ build
 bun.lock
 package-lock.json
 .env
+*.vsix
